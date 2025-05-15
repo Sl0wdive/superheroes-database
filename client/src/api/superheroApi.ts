@@ -20,3 +20,6 @@ export const createSuperhero = (formData: FormData) =>
 
 export const updateSuperhero = (id: string, formData: FormData) =>
   api.put(`/api/superheroes/${id}`, formData);
+
+export const deleteSuperhero = async (id: string) => 
+  api.delete(`/api/superheroes/${id}`);

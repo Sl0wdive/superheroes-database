@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getSuperheroes, getSuperheroById, createSuperhero, updateSuperhero } from "../../api/superheroApi";
+import { getSuperheroes, getSuperheroById, createSuperhero, updateSuperhero, deleteSuperhero } from "../../api/superheroApi";
 import type { Superhero } from "../../types/Superhero";
 
 const PAGE_SIZE = 5;
@@ -14,7 +14,7 @@ export const fetchSuperheroes = createAsyncThunk(
 
 export const fetchSuperheroById = createAsyncThunk(
   "superheroes/fetchSuperheroById",
-  async (id: string) => { 
+  async (id: string) => {
     const res = await getSuperheroById(id);
     return res.data;
   }
@@ -33,6 +33,14 @@ export const updateSuperheroAction = createAsyncThunk(
   async ({ id, formData }: { id: string; formData: FormData }) => {
     const res = await updateSuperhero(id, formData);
     return res.data;
+  }
+);
+
+export const deleteSuperheroAction = createAsyncThunk(
+  "superheroes/deleteSuperhero",
+  async (id: string) => {
+    await deleteSuperhero(id);
+    return id;
   }
 );
 
@@ -118,6 +126,9 @@ const superheroSlice = createSlice({
       .addCase(updateSuperheroAction.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to update superhero";
+      })
+      .addCase(deleteSuperheroAction.fulfilled, (state, action) => {
+        state.superheroes = state.superheroes.filter(hero => hero.id !== action.payload);
       });
   },
 });

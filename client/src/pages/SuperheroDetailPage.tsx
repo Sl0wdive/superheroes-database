@@ -1,12 +1,8 @@
-import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState, AppDispatch } from "../redux/store";
-import { Link } from "react-router-dom";
-import {
-  fetchSuperheroById,
-  clearCurrentSuperhero,
-} from "../redux/slices/superheroSlice";
+import { fetchSuperheroById, clearCurrentSuperhero, deleteSuperheroAction } from "../redux/slices/superheroSlice";
 import {
   Box,
   Typography,
@@ -18,14 +14,21 @@ import {
   CircularProgress,
   Button,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from "@mui/material";
 
 export const SuperheroDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { currentSuperhero, loading, error } = useSelector(
     (state: RootState) => state.superheroes
   );
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -35,6 +38,16 @@ export const SuperheroDetailPage = () => {
       dispatch(clearCurrentSuperhero());
     };
   }, [id, dispatch]);
+
+  const handleDelete = () => {
+    if (id) {
+      dispatch(deleteSuperheroAction(id))
+        .unwrap()
+        .then(() => {
+          navigate("/");
+        });
+    }
+  };
 
   if (loading) {
     return (
@@ -52,8 +65,7 @@ export const SuperheroDetailPage = () => {
     );
   }
 
-  if (!currentSuperhero)
-    return <Typography variant="h6">Superhero not found</Typography>;
+  if (!currentSuperhero) return <Typography variant="h6">Superhero not found</Typography>;
 
   const images = Array.isArray(currentSuperhero.images)
     ? currentSuperhero.images
@@ -63,24 +75,41 @@ export const SuperheroDetailPage = () => {
 
   return (
     <Box sx={{ p: 4, maxWidth: 1200, mx: "auto" }}>
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
-      >
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
         <Typography variant="h3" gutterBottom>
           {currentSuperhero.nickname}
         </Typography>
-        <Button
-          component={Link}
-          to={`/edit/${id}`}
-          variant="contained"
-          color="primary"
-        >
-          Edit Page
-        </Button>
+        <Stack direction="row" spacing={2}>
+          <Button
+            component={Link}
+            to={`/edit/${id}`}
+            variant="contained"
+            color="primary"
+          >
+            Edit
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => setOpenDeleteDialog(true)}
+          >
+            Delete
+          </Button>
+        </Stack>
       </Stack>
+
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>Delete Superhero</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete {currentSuperhero.nickname}? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
+          <Button onClick={handleDelete} color="error">Delete</Button>
+        </DialogActions>
+      </Dialog>
 
       {images.length > 0 ? (
         <ImageList cols={3} gap={16} sx={{ mb: 4 }}>
@@ -130,9 +159,7 @@ export const SuperheroDetailPage = () => {
               <Typography variant="h6" gutterBottom>
                 Origin Story
               </Typography>
-              <Typography paragraph>
-                {currentSuperhero.origin_description}
-              </Typography>
+              <Typography paragraph>{currentSuperhero.origin_description}</Typography>
             </>
           )}
           {currentSuperhero.catch_phrase && (
