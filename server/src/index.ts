@@ -5,6 +5,8 @@ import connectDB from './config/db';
 import superheroRoutes from './routes/superhero.routes';
 import fs from 'fs';
 import cors from 'cors';
+import { Request, Response, NextFunction } from 'express';
+
 
 dotenv.config();
 
@@ -24,6 +26,11 @@ if (!fs.existsSync(uploadsDir)) {
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/superheroes', superheroRoutes);
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
