@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit";
 import { getSuperheroes, getSuperheroById, createSuperhero, updateSuperhero, deleteSuperhero } from "../../api/superheroApi";
 import type { Superhero } from "../../types/Superhero";
 
@@ -38,9 +38,14 @@ export const updateSuperheroAction = createAsyncThunk(
 
 export const deleteSuperheroAction = createAsyncThunk(
   "superheroes/deleteSuperhero",
-  async (id: string) => {
+  async (id: string, { getState }) => {
     await deleteSuperhero(id);
-    return id;
+    const state = getState() as { superheroes: SuperheroState };
+    return { 
+      id,
+      currentPage: state.superheroes.page,
+      currentTotal: state.superheroes.superheroes.length
+    };
   }
 );
 
@@ -74,7 +79,10 @@ const superheroSlice = createSlice({
     },
     clearCurrentSuperhero(state) {
       state.currentSuperhero = null;
-    }
+    },
+    setPage(state, action: PayloadAction<number>) {
+      state.page = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -128,7 +136,14 @@ const superheroSlice = createSlice({
         state.error = action.error.message || "Failed to update superhero";
       })
       .addCase(deleteSuperheroAction.fulfilled, (state, action) => {
-        state.superheroes = state.superheroes.filter(hero => hero.id !== action.payload);
+        state.superheroes = state.superheroes.filter(hero => hero.id !== action.payload.id);
+        const newTotal = action.payload.currentTotal - 1;
+        const newTotalPages = Math.ceil(newTotal / PAGE_SIZE);
+        if (state.page > newTotalPages) {
+          state.page = newTotalPages > 0 ? newTotalPages : 1;
+        }
+        
+        state.totalPages = newTotalPages;
       });
   },
 });
